@@ -1,4 +1,4 @@
-# ArduinoModbus
+# Arduino Modbus Slave
 
 A Modbus RTU slave implementation for the Arduino Uno, built with PlatformIO.
 
