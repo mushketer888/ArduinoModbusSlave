@@ -13,7 +13,8 @@ ModbusRTUSlave modbus(rs485);
 
 // 3. Define the array that will act as our Holding Registers
 // The library will automatically link Modbus registers to this array!
-const uint8_t numHoldingRegisters = 1;
+// Total 10 registers: 40001 = LED, 40002-40010 = general purpose
+const uint8_t numHoldingRegisters = 10;
 uint16_t holdingRegisters[numHoldingRegisters];
 
 void setup() {
@@ -24,6 +25,9 @@ void setup() {
   // Initialize the LED pin
   pinMode(LED_PIN, OUTPUT);
   digitalWrite(LED_PIN, LOW);
+
+  // Clear all registers to known defaults
+  memset(holdingRegisters, 0, sizeof(holdingRegisters));
 
   // Link the Modbus Holding Registers to our C++ array
   modbus.configureHoldingRegisters(holdingRegisters, numHoldingRegisters);
@@ -36,13 +40,18 @@ void setup() {
   modbus.begin(1, 9600, SERIAL_8N1);
   
   Serial.println("Waiting for Master commands...");
+  Serial.print("Holding registers: ");
+  Serial.print(numHoldingRegisters);
+  Serial.print(" (40001-400");
+  Serial.print(numHoldingRegisters, DEC);
+  Serial.println(")");
 }
 
 void loop() {
   // THIS IS CRITICAL: poll() must be called continuously to listen for the Master
   modbus.poll();
 
-  // Read Holding Register 0 (which is 40001 in Modbus terminology)
+  // Read Holding Register 40001 (index 0)
   // The library automatically updates this array in the background when the Master writes to it!
   uint16_t ledValue = holdingRegisters[0];
 
