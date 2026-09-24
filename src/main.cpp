@@ -17,6 +17,13 @@ ModbusRTUSlave modbus(rs485);
 const uint8_t numHoldingRegisters = 10;
 uint16_t holdingRegisters[numHoldingRegisters];
 
+// RANDOM_REGISTER: -1 = disabled, >=0 = index of the holding register
+// that the slave fills with a random value on every loop() iteration.
+// Example: RANDOM_REGISTER=1 -> register 40002 will be random.
+const int16_t RANDOM_REGISTER = -1;
+static_assert(RANDOM_REGISTER < 0 || RANDOM_REGISTER < numHoldingRegisters,
+              "RANDOM_REGISTER out of range (must be < numHoldingRegisters or -1)");
+
 void setup() {
   // Start USB Serial for debugging on your PC
   Serial.begin(9600);
@@ -31,6 +38,9 @@ void setup() {
 
   // Link the Modbus Holding Registers to our C++ array
   modbus.configureHoldingRegisters(holdingRegisters, numHoldingRegisters);
+
+  // Seed the PRNG from noise on A0 so the random register changes every cycle
+  randomSeed(analogRead(A0));
 
   // Start the RS485 serial port at 9600 baud
   rs485.begin(9600); 
@@ -50,6 +60,12 @@ void setup() {
 void loop() {
   // THIS IS CRITICAL: poll() must be called continuously to listen for the Master
   modbus.poll();
+
+  // Random register: the slave fills this one with a fresh uint16 every cycle.
+  // RANDOM_REGISTER = -1 disables this behavior (register stays as written by the Master).
+  if (RANDOM_REGISTER >= 0) {
+    holdingRegisters[RANDOM_REGISTER] = (uint16_t)random(0, 65536);
+  }
 
   // Read Holding Register 40001 (index 0)
   // The library automatically updates this array in the background when the Master writes to it!
